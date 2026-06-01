@@ -22,5 +22,17 @@
     "locked": false,
     "verified": true,
     "last_active": "2026-05-28T12:25:12.508078+00:00"
+  },
+  {
+    "user_id": "cust-001",
+    "name": "Test Customer",
+    "email": "customer@test.com",
+    "password_hash": "8776f108e247ab1e2b323042c049c266407c81fbad41bde1e8dfc1bb66fd267e",
+    "role": "Customer",
+    "address": "123 Test Street Melbourne",
+    "failed_attempts": 0,
+    "locked": false,
+    "verified": true,
+    "last_active": "2026-06-01T09:39:40.907841+00:00"
   }
 ]

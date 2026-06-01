@@ -12,67 +12,87 @@ Coding standard: PEP 8 (https://peps.python.org/pep-0008/)
 """
 import sys
 import os
-import tkinter as tk
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 from bookstore_app import BookstoreApp
 from managers.catalogue_manager import CatalogueManager
-from ui.auth_ui import LoginWindow, RegisterWindow
-from ui.main_window import MainWindow
 
 
 def main():
-    # ── Bootstrap ─────────────────────────────────────────────────────────────
+    # Bootstrap
     app = BookstoreApp()
-
-    # Step 1 — CatalogueManager (Member 2)
     catalogue_manager = CatalogueManager()
-    catalogue_manager.seed_catalogue()       # populate books.json if empty
+    catalogue_manager.seed_catalogue()
     app.register_catalogue_manager(catalogue_manager)
 
-    # Step 3 — OrderManager (Member 3 — uncomment when ready)
-    # from managers.order_manager import OrderManager
-    # app.register_order_manager(
-    #     OrderManager(app.user_manager, app.catalogue_manager)
-    # )
+    _run_login(app)
 
-    # ── Tkinter root window ───────────────────────────────────────────────────
+
+def _run_login(app):
+    import tkinter as tk
+    from ui.auth_ui import LoginWindow, RegisterWindow
+    from ui.main_window import MainWindow
+
     root = tk.Tk()
     root.withdraw()
-    root.title("Favourite Books")
-
-    # ── Navigation callbacks ──────────────────────────────────────────────────
 
     def on_login_success(role):
-        main_win = MainWindow(
+        root.destroy()
+        _run_main(app)
+
+    def on_register():
+        for w in root.winfo_children():
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        RegisterWindow(
+            root,
             user_manager=app.user_manager,
-            catalogue_manager=app.catalogue_manager,
-            order_manager=app.order_manager,
+            on_back=on_back_to_login,
         )
-        main_win.protocol("WM_DELETE_WINDOW",
-                          lambda: on_main_close(main_win))
-        main_win.mainloop()
 
-    def on_main_close(win):
-        app.shutdown()
-        win.destroy()
-        show_login()
-
-    def show_register():
-        RegisterWindow(root, user_manager=app.user_manager,
-                       on_back=show_login)
-
-    def show_login():
+    def on_back_to_login():
+        for w in root.winfo_children():
+            try:
+                w.destroy()
+            except Exception:
+                pass
         LoginWindow(
             root,
             user_manager=app.user_manager,
             on_success=on_login_success,
-            on_register=show_register,
+            on_register=on_register,
         )
 
-    show_login()
+    LoginWindow(
+        root,
+        user_manager=app.user_manager,
+        on_success=on_login_success,
+        on_register=on_register,
+    )
+
     root.mainloop()
+
+
+def _run_main(app):
+    import tkinter as tk
+    from ui.main_window import MainWindow
+
+    def on_close(win):
+        app.shutdown()
+        win.destroy()
+        _run_login(app)
+
+    main_win = MainWindow(
+        user_manager=app.user_manager,
+        catalogue_manager=app.catalogue_manager,
+        order_manager=app.order_manager,
+    )
+    main_win.protocol("WM_DELETE_WINDOW",
+                      lambda: on_close(main_win))
+    main_win.mainloop()
 
 
 if __name__ == "__main__":
