@@ -5,7 +5,7 @@ Panels provided:
   - CataloguePanel : Embedded panel loaded into MainWindow content area.
                      Switches view based on user role:
                        StoreManager -> Manage Catalogue (add / edit / remove + browse)
-                       Customer     -> Browse Catalogue (search / filter / view)
+                       Customer     -> Browse Catalogue (search / filter / view / add to cart)
 
 Coding standard: PEP 8 (https://peps.python.org/pep-0008/)
 """
@@ -20,6 +20,7 @@ MID_BLUE  = "#185FA5"
 DARK_BLUE = "#1A3A5C"
 RED       = "#C0392B"
 ORANGE    = "#D97706"
+GREEN     = "#0F6E56"
 GREY      = "#888888"
 
 FONT_HEAD  = ("Arial", 15, "bold")
@@ -45,14 +46,18 @@ class CataloguePanel(tk.Frame):
     Renders differently for StoreManager vs Customer.
     """
 
-    def __init__(self, parent, catalogue_manager, user_manager, **kwargs):
+    def __init__(self, parent, catalogue_manager, user_manager,
+                 cart=None, **kwargs):
         super().__init__(parent, bg=BG, **kwargs)
-        self.cm = catalogue_manager
-        self.um = user_manager
-        session = user_manager.get_session() or {}
+        self.cm   = catalogue_manager
+        self.um   = user_manager
+        # cart is a list of dicts: [{"book_id": ..., "quantity": ...}]
+        # passed in by OrderManager when available, empty list otherwise
+        self.cart = cart if cart is not None else []
+        session   = user_manager.get_session() or {}
         self.role = session.get("role", "Customer")
         self._selected_book_id = None
-        self._editing_id = None
+        self._editing_id       = None
         self._build()
 
     def _build(self):
@@ -61,9 +66,7 @@ class CataloguePanel(tk.Frame):
         else:
             self._build_customer_view()
 
-    # =========================================================================
     # STORE MANAGER VIEW
-    # =========================================================================
 
     def _build_manager_view(self):
         # Top bar
@@ -95,33 +98,21 @@ class CataloguePanel(tk.Frame):
             search_bar,
             text="Search",
             command=self._mgr_do_search,
-            bg=MID_BLUE,
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=8,
-            state="normal",
+            bg=MID_BLUE, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=8, state="normal",
         ).pack(side="left", padx=(0, 6))
 
         tk.Button(
             search_bar,
             text="Show All",
             command=self._mgr_show_all,
-            bg="#6B7280",
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=9,
-            state="normal",
+            bg="#6B7280", fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=9, state="normal",
         ).pack(side="left")
 
-        # Main area — two columns
+        # Main area
         main = tk.Frame(self, bg=BG, padx=20, pady=8)
         main.pack(fill="both", expand=True)
         main.columnconfigure(0, weight=3)
@@ -142,21 +133,12 @@ class CataloguePanel(tk.Frame):
 
         cols = ("Title", "Author", "Genre", "ISBN", "Price", "Stock")
         self._mgr_tree = ttk.Treeview(
-            left,
-            columns=cols,
-            show="headings",
-            selectmode="browse",
-            height=16,
+            left, columns=cols, show="headings",
+            selectmode="browse", height=16,
             style="Catalogue.Treeview",
         )
-        col_widths = {
-            "Title": 180,
-            "Author": 140,
-            "Genre": 110,
-            "ISBN": 120,
-            "Price": 70,
-            "Stock": 55,
-        }
+        col_widths = {"Title": 180, "Author": 140, "Genre": 110,
+                      "ISBN": 120, "Price": 70, "Stock": 55}
         for c in cols:
             self._mgr_tree.heading(c, text=c)
             self._mgr_tree.column(c, width=col_widths[c],
@@ -174,33 +156,19 @@ class CataloguePanel(tk.Frame):
         btn_row.grid(row=1, column=0, columnspan=2, sticky="w")
 
         tk.Button(
-            btn_row,
-            text="Edit Selected",
+            btn_row, text="Edit Selected",
             command=self._mgr_load_for_edit,
-            bg=MID_BLUE,
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=15,
-            state="normal",
+            bg=MID_BLUE, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=15, state="normal",
         ).pack(side="left", padx=(0, 8))
 
         tk.Button(
-            btn_row,
-            text="Remove Selected",
+            btn_row, text="Remove Selected",
             command=self._mgr_remove_selected,
-            bg=RED,
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=16,
-            state="normal",
+            bg=RED, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=16, state="normal",
         ).pack(side="left")
 
         # Right: add/edit form
@@ -242,34 +210,20 @@ class CataloguePanel(tk.Frame):
         form_btns.pack(fill="x")
 
         self._save_btn = tk.Button(
-            form_btns,
-            text="Save Book",
+            form_btns, text="Save Book",
             command=self._mgr_save_book,
-            bg=MID_BLUE,
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=12,
-            state="normal",
+            bg=MID_BLUE, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=12, state="normal",
         )
         self._save_btn.pack(side="left", padx=(0, 8))
 
         tk.Button(
-            form_btns,
-            text="Clear",
+            form_btns, text="Clear",
             command=self._mgr_clear_form,
-            bg="#6B7280",
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=8,
-            state="normal",
+            bg="#6B7280", fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=8, state="normal",
         ).pack(side="left")
 
         self._mgr_refresh_table()
@@ -283,14 +237,9 @@ class CataloguePanel(tk.Frame):
             self._mgr_tree.insert(
                 "", "end",
                 iid=_safe_iid(book.book_id),
-                values=(
-                    book.title,
-                    book.author,
-                    book.genre,
-                    book.isbn,
-                    f"${book.price:.2f}",
-                    book.stock_quantity,
-                ),
+                values=(book.title, book.author, book.genre,
+                        book.isbn, f"${book.price:.2f}",
+                        book.stock_quantity),
                 tags=(tag,),
             )
         self._mgr_tree.tag_configure("outofstock", foreground=ORANGE)
@@ -306,10 +255,7 @@ class CataloguePanel(tk.Frame):
 
     def _mgr_on_select(self, _event=None):
         sel = self._mgr_tree.selection()
-        if sel:
-            self._selected_book_id = _strip_iid(sel[0])
-        else:
-            self._selected_book_id = None
+        self._selected_book_id = _strip_iid(sel[0]) if sel else None
 
     def _mgr_load_for_edit(self):
         if not self._selected_book_id:
@@ -408,9 +354,7 @@ class CataloguePanel(tk.Frame):
             self._entries[key].delete(0, tk.END)
         self._form_msg.config(text="")
 
-    # =========================================================================
     # CUSTOMER VIEW
-    # =========================================================================
 
     def _build_customer_view(self):
         # Top bar
@@ -418,6 +362,13 @@ class CataloguePanel(tk.Frame):
         top.pack(fill="x")
         tk.Label(top, text="Browse Catalogue", bg=BG,
                  font=FONT_HEAD, fg=DARK_BLUE).pack(side="left")
+
+        # Cart count label
+        self._cart_label = tk.Label(
+            top, text=f"🛒  Cart: {len(self.cart)} item(s)",
+            bg=BG, font=FONT_BODY, fg=MID_BLUE,
+        )
+        self._cart_label.pack(side="right", padx=20)
 
         # Filter bar
         filter_bar = tk.Frame(self, bg=BG, padx=20, pady=6)
@@ -429,10 +380,7 @@ class CataloguePanel(tk.Frame):
         cust_entry = tk.Entry(
             filter_bar,
             textvariable=self._cust_search_var,
-            font=FONT_BODY,
-            relief="solid",
-            bd=1,
-            width=22,
+            font=FONT_BODY, relief="solid", bd=1, width=22,
         )
         cust_entry.pack(side="left", padx=(6, 12))
         cust_entry.bind("<Return>", lambda e: self._cust_do_search())
@@ -441,11 +389,8 @@ class CataloguePanel(tk.Frame):
                  font=FONT_BODY).pack(side="left")
         self._cust_genre_var = tk.StringVar(value="All Genres")
         self._genre_combo = ttk.Combobox(
-            filter_bar,
-            textvariable=self._cust_genre_var,
-            font=FONT_BODY,
-            width=15,
-            state="readonly",
+            filter_bar, textvariable=self._cust_genre_var,
+            font=FONT_BODY, width=15, state="readonly",
         )
         self._genre_combo.pack(side="left", padx=(6, 12))
 
@@ -453,53 +398,31 @@ class CataloguePanel(tk.Frame):
                  font=FONT_BODY).pack(side="left")
         self._cust_min_var = tk.StringVar()
         tk.Entry(
-            filter_bar,
-            textvariable=self._cust_min_var,
-            font=FONT_BODY,
-            relief="solid",
-            bd=1,
-            width=5,
+            filter_bar, textvariable=self._cust_min_var,
+            font=FONT_BODY, relief="solid", bd=1, width=5,
         ).pack(side="left", padx=(6, 2))
         tk.Label(filter_bar, text="-", bg=BG,
                  font=FONT_BODY).pack(side="left")
         self._cust_max_var = tk.StringVar()
         tk.Entry(
-            filter_bar,
-            textvariable=self._cust_max_var,
-            font=FONT_BODY,
-            relief="solid",
-            bd=1,
-            width=5,
+            filter_bar, textvariable=self._cust_max_var,
+            font=FONT_BODY, relief="solid", bd=1, width=5,
         ).pack(side="left", padx=(2, 12))
 
         tk.Button(
-            filter_bar,
-            text="Search",
+            filter_bar, text="Search",
             command=self._cust_do_search,
-            bg=MID_BLUE,
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=8,
-            state="normal",
+            bg=MID_BLUE, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=8, state="normal",
         ).pack(side="left", padx=(0, 6))
 
         tk.Button(
-            filter_bar,
-            text="Clear",
+            filter_bar, text="Clear",
             command=self._cust_clear_filters,
-            bg="#6B7280",
-            fg="white",
-            font=FONT_BTN,
-            relief="flat",
-            cursor="hand2",
-            padx=12,
-            pady=6,
-            width=7,
-            state="normal",
+            bg="#6B7280", fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=7, state="normal",
         ).pack(side="left")
 
         # Book list
@@ -516,20 +439,12 @@ class CataloguePanel(tk.Frame):
 
         cols = ("Title", "Author", "Genre", "Price", "Availability")
         self._cust_tree = ttk.Treeview(
-            list_frame,
-            columns=cols,
-            show="headings",
-            selectmode="browse",
-            height=16,
+            list_frame, columns=cols, show="headings",
+            selectmode="browse", height=14,
             style="Browse.Treeview",
         )
-        col_widths = {
-            "Title": 260,
-            "Author": 180,
-            "Genre": 130,
-            "Price": 80,
-            "Availability": 140,
-        }
+        col_widths = {"Title": 260, "Author": 180, "Genre": 130,
+                      "Price": 80, "Availability": 140}
         for c in cols:
             self._cust_tree.heading(c, text=c)
             self._cust_tree.column(c, width=col_widths[c],
@@ -541,15 +456,127 @@ class CataloguePanel(tk.Frame):
         self._cust_tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
         self._cust_tree.tag_configure("outofstock", foreground=ORANGE)
+        self._cust_tree.bind("<<TreeviewSelect>>", self._cust_on_select)
 
-        # Status bar
+        # Bottom bar — status + Add to Cart button
+        bottom = tk.Frame(self, bg=BG, padx=20, pady=8)
+        bottom.pack(fill="x")
+
         self._cust_status = tk.Label(
-            self, text="", bg=BG, font=FONT_SMALL, fg=GREY,
+            bottom, text="", bg=BG, font=FONT_SMALL, fg=GREY,
         )
-        self._cust_status.pack(anchor="w", padx=20, pady=(4, 6))
+        self._cust_status.pack(side="left")
 
+        # Quantity selector
+        tk.Label(bottom, text="Qty:", bg=BG,
+                 font=FONT_BODY).pack(side="right", padx=(0, 4))
+        self._qty_var = tk.StringVar(value="1")
+        tk.Spinbox(
+            bottom,
+            from_=1, to=99,
+            textvariable=self._qty_var,
+            font=FONT_BODY, width=4,
+            relief="solid", bd=1,
+        ).pack(side="right", padx=(0, 8))
+
+        # Add to Cart button
+        self._add_cart_btn = tk.Button(
+            bottom,
+            text="🛒  Add to Cart",
+            command=self._cust_add_to_cart,
+            bg=GREEN, fg="white", font=FONT_BTN,
+            relief="flat", cursor="hand2",
+            padx=12, pady=6, width=14, state="normal",
+        )
+        self._add_cart_btn.pack(side="right", padx=(0, 8))
+
+        self._cust_selected_book_id = None
         self._cust_refresh_genres()
         self._cust_refresh_table()
+
+    def _cust_on_select(self, _event=None):
+        sel = self._cust_tree.selection()
+        self._cust_selected_book_id = _strip_iid(sel[0]) if sel else None
+
+    def _cust_add_to_cart(self):
+        """
+        Add the selected book to the cart.
+        - Checks a book is selected
+        - Checks the book is in stock
+        - If already in cart, increments quantity
+        - If not in cart, adds new entry
+        - Updates the cart label count
+        - Shows confirmation message
+        """
+        if not self._cust_selected_book_id:
+            messagebox.showwarning(
+                "No Selection",
+                "Please click a book to select it first.",
+                parent=self,
+            )
+            return
+
+        book = self.cm.get_book_by_id(self._cust_selected_book_id)
+        if not book:
+            messagebox.showerror("Error", "Book not found.", parent=self)
+            return
+
+        if book.stock_quantity == 0:
+            messagebox.showwarning(
+                "Out of Stock",
+                f'"{book.title}" is currently out of stock.',
+                parent=self,
+            )
+            return
+
+        try:
+            qty = int(self._qty_var.get())
+            if qty < 1:
+                qty = 1
+        except ValueError:
+            qty = 1
+
+        if qty > book.stock_quantity:
+            messagebox.showwarning(
+                "Insufficient Stock",
+                f'Only {book.stock_quantity} copy/copies of '
+                f'"{book.title}" available.',
+                parent=self,
+            )
+            return
+
+        # Check if already in cart — increment if so
+        for item in self.cart:
+            if item["book_id"] == book.book_id:
+                item["quantity"] += qty
+                self._update_cart_label()
+                messagebox.showinfo(
+                    "Cart Updated",
+                    f'"{book.title}" quantity updated to '
+                    f'{item["quantity"]} in your cart.',
+                    parent=self,
+                )
+                return
+
+        # Not in cart — add new entry
+        self.cart.append({
+            "book_id":  book.book_id,
+            "title":    book.title,
+            "price":    book.price,
+            "quantity": qty,
+        })
+        self._update_cart_label()
+        messagebox.showinfo(
+            "Added to Cart",
+            f'"{book.title}" (x{qty}) has been added to your cart.',
+            parent=self,
+        )
+
+    def _update_cart_label(self):
+        total_items = sum(i["quantity"] for i in self.cart)
+        self._cart_label.config(
+            text=f"🛒  Cart: {total_items} item(s)"
+        )
 
     def _cust_refresh_genres(self):
         genres = ["All Genres"] + self.cm.get_genres()
@@ -570,13 +597,8 @@ class CataloguePanel(tk.Frame):
             self._cust_tree.insert(
                 "", "end",
                 iid=_safe_iid(book.book_id),
-                values=(
-                    book.title,
-                    book.author,
-                    book.genre,
-                    f"${book.price:.2f}",
-                    avail,
-                ),
+                values=(book.title, book.author, book.genre,
+                        f"${book.price:.2f}", avail),
                 tags=(tag,),
             )
         count = len(books)
