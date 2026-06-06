@@ -12,9 +12,13 @@ Coding standard: PEP 8 (https://peps.python.org/pep-0008/)
 """
 import sys
 import os
-
+# Forces Python to look at the exact directory where main.py sits
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.dirname(current_dir)) # Safety fallback for parent paths
 sys.path.insert(0, os.path.dirname(__file__))
 
+from bookstore.managers.order_manager import OrderManager
 from bookstore_app import BookstoreApp
 from managers.catalogue_manager import CatalogueManager
 
@@ -26,7 +30,16 @@ def main():
     catalogue_manager.seed_catalogue()
     app.register_catalogue_manager(catalogue_manager)
 
+#Backend initialization 
+    from managers.order_manager import OrderManager
+    order_manager = OrderManager(app.user_manager, catalogue_manager)
+    app.register_order_manager(order_manager)
+    app.register_order_manager(order_manager)
+
+      
+
     _run_login(app)
+   
 
 
 def _run_login(app):
@@ -79,6 +92,7 @@ def _run_login(app):
 def _run_main(app):
     import tkinter as tk
     from ui.main_window import MainWindow
+    from ui.order_ui import OrderSystemWindow
 
     def on_close(win):
         app.shutdown()
@@ -90,6 +104,8 @@ def _run_main(app):
         catalogue_manager=app.catalogue_manager,
         order_manager=app.order_manager,
     )
+
+   
     main_win.protocol("WM_DELETE_WINDOW",
                       lambda: on_close(main_win))
     main_win.mainloop()
