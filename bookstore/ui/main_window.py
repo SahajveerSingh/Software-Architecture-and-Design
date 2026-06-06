@@ -162,18 +162,32 @@ class MainWindow(tk.Tk):
             tk.Label(frame, text=f"Error loading catalogue: {e}",
                      bg=BG, font=FONT_BODY, fg="red").pack()
 
+   
     def _show_orders(self):
         frame = self._content_frame(
             "All Orders" if self.role == "StoreManager" else "My Cart / Orders"
         )
-        ph = tk.Frame(frame, bg=PANEL, relief="solid", bd=1,
-                      padx=20, pady=30)
-        ph.pack(fill="both", expand=True)
-        tk.Label(ph,
-                 text="Orders / Cart UI\n\n"
-                      "This panel will be implemented by Member 3.",
-                 bg=PANEL, font=FONT_BODY, fg=GREY,
-                 justify="center").pack(expand=True)
+        
+        # ph = tk.Frame(frame, bg=PANEL, relief="solid", bd=1,
+        #               padx=20, pady=30)
+        # ph.pack(fill="both", expand=True)
+        # tk.Label(ph,
+        #         text="Orders / Cart UI\n\n"
+        #              "This panel will be implemented by Member 3.",
+        #         bg=PANEL, font=FONT_BODY, fg=GREY,
+        #         justify="center").pack(expand=True)
+        # ──────────────────────────────────────────────────────────────────
+
+        from ui.order_ui import OrderSystemWindow
+        self.order_panel = OrderSystemWindow(
+            frame,
+            user_manager=self.user_manager,
+            catalogue_manager=self.catalogue_manager,
+            order_manager=self.order_manager
+        )
+    
+        self.order_panel.pack(fill="both", expand=True)
+        # ──────────────────────────────────────────────────────────────────
 
     def _show_statistics(self):
         frame = self._content_frame("Sales Statistics")
