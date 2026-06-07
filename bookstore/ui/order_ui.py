@@ -62,20 +62,22 @@ class OrderSystemWindow(tk.Frame):
     # ── Cart Processing Panel Construction ──────────────────────────────────
 
     def _build_cart_tab(self):
-        """Builds interactive tables showing items, quantity controls, and address inputs."""
         ttk.Label(self.cart_frame, text="Active Shopping Cart Items", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=5)
 
-        # Matched exactly to your Tkinter layout columns!
-        columns = ("id", "title", "qty")
+        # Expanded back to 5 columns to show unit prices and subtotals
+        columns = ("id", "title", "qty", "price", "subtotal")
         self.cart_tree = ttk.Treeview(self.cart_frame, columns=columns, show="headings", height=8)
         self.cart_tree.heading("id", text="Book ID")
         self.cart_tree.heading("title", text="Book Title")
         self.cart_tree.heading("qty", text="Quantity")
+        self.cart_tree.heading("price", text="Unit Price")
+        self.cart_tree.heading("subtotal", text="Subtotal")
         
-        # Explicit column sizing to fill out the window space cleanly
-        self.cart_tree.column("id", width=150, anchor="center")
-        self.cart_tree.column("title", width=350, anchor="w")
-        self.cart_tree.column("qty", width=100, anchor="center")
+        self.cart_tree.column("id", width=100, anchor="center")
+        self.cart_tree.column("title", width=250, anchor="w")
+        self.cart_tree.column("qty", width=80, anchor="center")
+        self.cart_tree.column("price", width=100, anchor="center")
+        self.cart_tree.column("subtotal", width=100, anchor="center")
         self.cart_tree.pack(fill="x", padx=10, pady=5)
 
         btn_frame = ttk.Frame(self.cart_frame)
@@ -100,7 +102,6 @@ class OrderSystemWindow(tk.Frame):
         self._refresh_cart_display()
 
     def _refresh_cart_display(self):
-        """Clears out stale data cells and evaluates calculated totals."""
         for item in self.cart_tree.get_children():
             self.cart_tree.delete(item)
 
@@ -109,9 +110,10 @@ class OrderSystemWindow(tk.Frame):
 
         for book_id, cart_item in cart_dict.items():
             total_accumulator += cart_item.line_total()
+            # Inserting 5 specific values to load the price rows cleanly
             self.cart_tree.insert(
                 "", "end", 
-                values=(cart_item.book_id, cart_item.title, cart_item.quantity)
+                values=(cart_item.book_id, cart_item.title, cart_item.quantity, f"${cart_item.price:.2f}", f"${cart_item.line_total():.2f}")
             )
         self.lbl_grand_total.config(text=f"Grand Total (inc. GST): ${total_accumulator * 1.1:.2f}")
 
