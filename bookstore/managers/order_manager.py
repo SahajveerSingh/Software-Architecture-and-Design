@@ -7,7 +7,6 @@ Responsibilities:
   - Persist transactions via the shared team flat-file JSON storage utility
   - Support distinct multi-role access routes (Customer History vs Manager Ledger Tracking)
 
-Coding standard: PEP 8 (https://python.org)
 """
 
 import os
@@ -27,25 +26,9 @@ class OrderManager:
     def __init__(self, user_manager, catalogue_manager):
         self.user_manager = user_manager
         self.catalogue_manager = catalogue_manager
-        
-        # Volatile runtime cart session storage dictionary matrix
         self.active_carts = {}
-        self.STATUS_FLOW = Order.STATUSES # ["Placed", "Paid", "Dispatched", "Delivered"]
+        self.STATUS_FLOW = Order.STATUSES
         self.was_cleared = False
-
-        # ── BYPASS INITIALIZATION: SEED TEST ITEMS FOR ISOLATED TESTING ──
-       # session = self.user_manager.get_session()
-        #user_id = session["user_id"] if session else "CUST-EDWIN-999"
-        
-       # if user_id not in self.active_carts:
-        #    self.active_carts[user_id] = {}
-            
-        #self.active_carts[user_id]["BOOK-101"] = CartItem(
-         #   book_id="BOOK-101",
-          #  title="Software Architecture in Practice",
-           # price=89.95,
-            #quantity=2
-        #)
 
     def _load_orders(self):
         """Loads and reconstructs Order instances using the team's shared file storage engine."""
@@ -67,11 +50,12 @@ class OrderManager:
     def add_to_cart(self, user_id, book_id, quantity=1):
         """Validates catalog stock thresholds prior to allocating units into a session cart."""
         book = self._find_book_by_id(book_id)
-        
-        # Operational mitigation path supporting mock bypass books or real catalog matches
-        stock_available = getattr(book, "stock_quantity", 99) if book else 99
-        book_title = getattr(book, "title", "Software Architecture in Practice") if book else "Software Architecture in Practice"
-        book_price = getattr(book, "price", 89.95) if book else 89.95
+        if not book:
+            return False, "Book item could not be located inside the active system catalogue."
+            
+        stock_available = getattr(book, "stock_quantity", 0)
+        book_title = getattr(book, "title", "Unknown Book")
+        book_price = getattr(book, "price", 0.0)
             
         current_cart = self.get_cart(user_id)
         existing_item = current_cart.get(book_id)
@@ -81,7 +65,6 @@ class OrderManager:
         if target_qty > stock_available:
             return False, f"Insufficient stock allocation. Available remaining items: {stock_available}."
             
-        # CRITICAL FIX: If quantity drops to 0 or below, route strictly to remove_from_cart
         if target_qty <= 0:
             return self.remove_from_cart(user_id, book_id)
             
@@ -95,8 +78,7 @@ class OrderManager:
 
     def remove_from_cart(self, user_id, book_id):
         """Purges an entire designated book row directly from the session cart workspace."""
-        self.was_cleared = True  # Flip our tracking flag to True so the fallback loop stops force-feeding items
-        
+        self.was_cleared = True
         if user_id in self.active_carts and book_id in self.active_carts[user_id]:
             del self.active_carts[user_id][book_id]
             return True, "Selected book profile completely removed from current cart."
@@ -104,7 +86,7 @@ class OrderManager:
 
     def clear_cart(self, user_id):
         """Completely clears the specified user's active memory workspace cart."""
-        self.was_cleared = True  # Flip our tracking flag to True here as well
+        self.was_cleared = True
         self.active_carts[user_id] = {}
 
     # ── Transactional Checkout Engine ──────────────────────────────────────────
@@ -123,7 +105,7 @@ class OrderManager:
         
         for book_id, cart_item in list(cart.items()):
             book = self._find_book_by_id(book_id)
-            stock = getattr(book, "stock_quantity", 99) if book else 99
+            stock = getattr(book, "stock_quantity", 0) if book else 0
             
             if cart_item.quantity > stock:
                 return False, f"Stock changed mid-session. '{cart_item.title}' has only {stock} left."
@@ -136,12 +118,11 @@ class OrderManager:
             ))
             items_subtotal += cart_item.line_total()
 
-        # Safely decrement stock for matched catalog entities
         for item in order_items:
             self._decrement_catalogue_stock(item.book_id, item.quantity)
             
-        # Extract customer profile context metadata out of UserManager database listings
-        customer_name = "Edwin Test"
+        # Neutral fallback customer profile name assigned here to replace personal details
+        customer_name = "Valued Customer"
         if hasattr(self.user_manager, "_load_users"):
             try:
                 users_list = self.user_manager._load_users()
@@ -151,7 +132,6 @@ class OrderManager:
             except Exception:
                 pass
         
-        # Financial breakdowns (GST calculated as 10% of subtotal according to ATO rules)
         gst_amount = round(items_subtotal * 0.10, 2)
         grand_total = round(items_subtotal + gst_amount, 2)
         
@@ -171,12 +151,10 @@ class OrderManager:
             status="Placed", created_at=timestamp_str, invoice_id=invoice_id
         )
         
-        # Write record securely to data/orders.json via shared store utilities
         all_orders = self._load_orders()
         all_orders.append(new_order)
         self._save_orders(all_orders)
         
-        # Output print trace layout to console shell for log marking criteria
         print(self.generate_invoice_string(invoice_obj, order_items))
         print("\n[SYSTEM NOTIFICATION]: Payment processed successfully.")
         
@@ -186,32 +164,22 @@ class OrderManager:
     # ── History Ledger & Multi-User Progress Workflows ───────────────────────
 
     def get_customer_order_history(self, user_id):
-        """Filters out and tracks chronological transactional order trails matching a user."""
         all_orders = self._load_orders()
         return [o for o in all_orders if o.customer_id == user_id]
 
     def get_all_orders_for_manager(self):
-        """Returns the full master catalog listing array inside the database document."""
         return self._load_orders()
 
     def update_order_status(self, order_id, new_status):
-        """Allows administrative managers to alter tracking flags through sequential workflows."""
-        # CRITICAL VALIDATION PATHWAY CHECKPOINT: Reject empty or blank selections instantly
-        if not order_id or str(order_id).strip() in ("", "()", "None", "('',)"):
-            return False, "Validation Error: No active order row entry record was selected."
-
         if new_status not in self.STATUS_FLOW:
             return False, f"Invalid state input assignment. Choose from: {self.STATUS_FLOW}"
             
         orders = self._load_orders()
         for order in orders:
             current_id = order.order_id
-            
-            # Safe string cleaning path for Tkinter tuple inputs
             target_lookup = str(order_id).strip().replace("('", "").replace("',)", "")
             target_lookup = target_lookup.replace("('", "").replace("',", "").replace(")", "").strip()
             
-            # Enforce strict value verification instead of a loose 'in' check
             if current_id == target_lookup or target_lookup in current_id:
                 order.status = new_status
                 self._save_orders(orders)
@@ -219,9 +187,6 @@ class OrderManager:
                 
         return False, "Target tracking identifier missing from active registry context lines."
 
-    # ── Auxiliary Utility Methods ───────────────────────────────────────────
-
-    
     def generate_invoice_string(self, invoice, items):
         divider = "=" * 50
         lines = [
@@ -240,11 +205,13 @@ class OrderManager:
         return "\n".join(lines)
 
     def _find_book_by_id(self, book_id):
-        all_books = self.catalogue_manager.get_all_books()
-        return next((b for b in all_books if b.book_id == book_id), None)
+        if hasattr(self.catalogue_manager, "get_all_books"):
+            all_books = self.catalogue_manager.get_all_books()
+            return next((b for b in all_books if b.book_id == book_id or getattr(b, "isbn", "") == book_id), None)
+        return None
 
     def _decrement_catalogue_stock(self, book_id, qty_to_deduct):
         book = self._find_book_by_id(book_id)
-        if book:
+        if book and hasattr(self.catalogue_manager, "update_book"):
             new_stock = max(0, book.stock_quantity - qty_to_deduct)
-            self.catalogue_manager.update_book(book_id=book_id, stock_quantity=new_stock)
+            self.catalogue_manager.update_book(book_id=book.book_id, stock_quantity=new_stock)
