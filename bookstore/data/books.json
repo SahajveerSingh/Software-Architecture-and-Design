@@ -1,0 +1,101 @@
+[
+  {
+    "book_id": "c673f1f4-c145-41ca-95e4-b64030d6ad0c",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "genre": "Classic Fiction",
+    "isbn": "9780743273565",
+    "price": 18.99,
+    "stock_quantity": 12
+  },
+  {
+    "book_id": "24afdfad-7cfd-45fa-9ea4-e5c86cf13651",
+    "title": "To Kill a Mockingbird",
+    "author": "Harper Lee",
+    "genre": "Classic Fiction",
+    "isbn": "9780061935466",
+    "price": 16.99,
+    "stock_quantity": 8
+  },
+  {
+    "book_id": "83ff4dd7-93dd-4d55-8f2a-83d0c837b6f7",
+    "title": "1984",
+    "author": "George Orwell",
+    "genre": "Dystopian Fiction",
+    "isbn": "9780451524935",
+    "price": 14.99,
+    "stock_quantity": 20
+  },
+  {
+    "book_id": "668a8a50-4244-4828-bd44-657097a9438e",
+    "title": "Sapiens",
+    "author": "Yuval Noah Harari",
+    "genre": "Non-Fiction",
+    "isbn": "9780062316097",
+    "price": 24.99,
+    "stock_quantity": 15
+  },
+  {
+    "book_id": "dd141460-1afa-4e25-af92-16d6ccd7bffa",
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "genre": "Self-Help",
+    "isbn": "9780735211292",
+    "price": 27.99,
+    "stock_quantity": 18
+  },
+  {
+    "book_id": "21b23a53-0cc1-412c-ba40-134b6eed2096",
+    "title": "The Hitchhiker's Guide to the Galaxy",
+    "author": "Douglas Adams",
+    "genre": "Science Fiction",
+    "isbn": "9780345391803",
+    "price": 15.99,
+    "stock_quantity": 10
+  },
+  {
+    "book_id": "67e87679-104d-45cf-926b-7d21c8283258",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "genre": "Science Fiction",
+    "isbn": "9780441013593",
+    "price": 22.99,
+    "stock_quantity": 7
+  },
+  {
+    "book_id": "d0b81528-aa46-4674-9d89-a5a4c906b7f6",
+    "title": "The Alchemist",
+    "author": "Paulo Coelho",
+    "genre": "Fiction",
+    "isbn": "9780062315007",
+    "price": 17.99,
+    "stock_quantity": 14
+  },
+  {
+    "book_id": "5dcf7998-dda1-4756-9a4a-b16adffa1c11",
+    "title": "Educated",
+    "author": "Tara Westover",
+    "genre": "Memoir",
+    "isbn": "9780399590504",
+    "price": 21.99,
+    "stock_quantity": 6
+  },
+  {
+    "book_id": "c112bce6-7e5c-47b6-90e7-40bc1e8214df",
+    "title": "Python Crash Course",
+    "author": "Eric Matthes",
+    "genre": "Technology",
+    "isbn": "9781593279288",
+    "price": 49.99,
+    "stock_quantity": 1
+  },
+  {
+    "book_id": "9bea18ad-c994-45d7-b804-a0fd35dc79d9",
+    "title": "Clean Code",
+    "author": "Robert C. Martin",
+    "genre": "Technology",
+    "isbn": "9780132350884",
+    "price": 59.99,
+    "stock_quantity": 10
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "user_id": "69009f2e-63a9-4259-98df-62a6b3e6ccdf",
+    "name": "Store Manager",
+    "email": "admin@favouritebooks.com",
+    "password_hash": "e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7",
+    "role": "StoreManager",
+    "address": "Favourite Books, Glenferrie Rd, Hawthorn VIC 3122",
+    "failed_attempts": 0,
+    "locked": false,
+    "verified": true,
+    "last_active": "2026-06-07T10:01:41.988110+00:00"
+  },
+  {
+    "user_id": "eaeae43c-79f1-4f78-810d-aaf0b0dfdf4f",
+    "name": "Jane Smith",
+    "email": "jane@test.com",
+    "password_hash": "849f1575ccfbf3a4d6cf00e6c5641b7fd4da2ed3e212c2d79ba9161a5a432ff0",
+    "role": "Customer",
+    "address": "456 Oak Ave",
+    "failed_attempts": 0,
+    "locked": false,
+    "verified": true,
+    "last_active": "2026-05-28T12:25:12.508078+00:00"
+  },
+  {
+    "user_id": "cust-001",
+    "name": "Test Customer",
+    "email": "customer@test.com",
+    "password_hash": "8776f108e247ab1e2b323042c049c266407c81fbad41bde1e8dfc1bb66fd267e",
+    "role": "Customer",
+    "address": "123 Test Street Melbourne",
+    "failed_attempts": 0,
+    "locked": false,
+    "verified": true,
+    "last_active": "2026-06-06T04:25:02.533128+00:00"
+  }
+]
