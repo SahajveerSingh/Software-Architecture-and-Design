@@ -34,9 +34,6 @@ def main():
     from managers.order_manager import OrderManager
     order_manager = OrderManager(app.user_manager, catalogue_manager)
     app.register_order_manager(order_manager)
-    app.register_order_manager(order_manager)
-
-      
 
     _run_login(app)
    
