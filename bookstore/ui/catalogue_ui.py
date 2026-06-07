@@ -47,12 +47,11 @@ class CataloguePanel(tk.Frame):
     """
 
     def __init__(self, parent, catalogue_manager, user_manager,
-                 cart=None, **kwargs):
+                 order_manager=None, cart=None, **kwargs):
         super().__init__(parent, bg=BG, **kwargs)
         self.cm   = catalogue_manager
         self.um   = user_manager
-        # cart is a list of dicts: [{"book_id": ..., "quantity": ...}]
-        # passed in by OrderManager when available, empty list otherwise
+        self.om   = order_manager   # OrderManager — used to add items directly to shared cart
         self.cart = cart if cart is not None else []
         session   = user_manager.get_session() or {}
         self.role = session.get("role", "Customer")
@@ -503,8 +502,8 @@ class CataloguePanel(tk.Frame):
         Add the selected book to the cart.
         - Checks a book is selected
         - Checks the book is in stock
-        - If already in cart, increments quantity
-        - If not in cart, adds new entry
+        - Calls order_manager.add_to_cart() so the cart tab always stays in sync
+        - Falls back to local list if order_manager is not available
         - Updates the cart label count
         - Shows confirmation message
         """
@@ -545,34 +544,58 @@ class CataloguePanel(tk.Frame):
             )
             return
 
-        # Check if already in cart — increment if so
-        for item in self.cart:
-            if item["book_id"] == book.book_id:
-                item["quantity"] += qty
+        # Route through OrderManager so the cart tab stays in sync
+        if self.om is not None:
+            session = self.um.get_session() or {}
+            user_id = session.get("user_id")
+            if not user_id:
+                messagebox.showerror("Error", "No active session found.", parent=self)
+                return
+            ok, msg = self.om.add_to_cart(user_id, book.book_id, qty)
+            if ok:
                 self._update_cart_label()
                 messagebox.showinfo(
-                    "Cart Updated",
-                    f'"{book.title}" quantity updated to '
-                    f'{item["quantity"]} in your cart.',
+                    "Added to Cart",
+                    f'"{book.title}" (x{qty}) has been added to your cart.',
                     parent=self,
                 )
-                return
-
-        # Not in cart — add new entry
-        self.cart.append({
-            "book_id":  book.book_id,
-            "title":    book.title,
-            "price":    book.price,
-            "quantity": qty,
-        })
-        self._update_cart_label()
-        messagebox.showinfo(
-            "Added to Cart",
-            f'"{book.title}" (x{qty}) has been added to your cart.',
-            parent=self,
-        )
+            else:
+                messagebox.showwarning("Cart Error", msg, parent=self)
+        else:
+            # Fallback: order_manager not wired — use local list
+            for item in self.cart:
+                if item["book_id"] == book.book_id:
+                    item["quantity"] += qty
+                    self._update_cart_label()
+                    messagebox.showinfo(
+                        "Cart Updated",
+                        f'"{book.title}" quantity updated in your cart.',
+                        parent=self,
+                    )
+                    return
+            self.cart.append({
+                "book_id":  book.book_id,
+                "title":    book.title,
+                "price":    book.price,
+                "quantity": qty,
+            })
+            self._update_cart_label()
+            messagebox.showinfo(
+                "Added to Cart",
+                f'"{book.title}" (x{qty}) has been added to your cart.',
+                parent=self,
+            )
 
     def _update_cart_label(self):
+        # Show total quantity from order_manager cart if available, else local list
+        if self.om is not None:
+            session = self.um.get_session() or {}
+            user_id = session.get("user_id")
+            if user_id:
+                cart = self.om.get_cart(user_id)
+                total = sum(item.quantity for item in cart.values())
+                self._cart_label.config(text=f"🛒  Cart: {total} item(s)")
+                return
         total_items = sum(i["quantity"] for i in self.cart)
         self._cart_label.config(
             text=f"🛒  Cart: {total_items} item(s)"
